@@ -1,24 +1,23 @@
 use super::common::receive_from_stream;
 use super::socket::get_socketpath;
 use crate::{CommandType::*, Error::SubscriptionFailed, *};
-use async_io::{Async, Timer};
-use futures_lite::AsyncWriteExt;
 use serde::de::DeserializeOwned as Deserialize;
 use std::io::ErrorKind::NotConnected;
-use std::os::unix::net::UnixStream;
 use std::time::Duration;
+use tokio::io::AsyncWriteExt;
+use tokio::net::UnixStream;
 
 #[derive(Debug)]
-pub struct Connection(Async<UnixStream>);
+pub struct Connection(UnixStream);
 
 impl Connection {
     /// Creates a new async `Connection` to sway-ipc.
     pub async fn new() -> Fallible<Self> {
         let socketpath = get_socketpath().await?;
         loop {
-            let stream = Async::<UnixStream>::connect(socketpath.as_path()).await;
+            let stream = UnixStream::connect(socketpath.as_path()).await;
             if matches!(stream.as_ref().map_err(|e| e.kind()), Err(NotConnected)) {
-                Timer::after(Duration::from_millis(100)).await;
+                tokio::time::sleep(Duration::from_millis(100)).await;
             } else {
                 return Ok(Self(stream?));
             }
@@ -133,13 +132,13 @@ impl Connection {
     }
 }
 
-impl From<Async<UnixStream>> for Connection {
-    fn from(unix_stream: Async<UnixStream>) -> Self {
+impl From<UnixStream> for Connection {
+    fn from(unix_stream: UnixStream) -> Self {
         Self(unix_stream)
     }
 }
 
-impl From<Connection> for Async<UnixStream> {
+impl From<Connection> for UnixStream {
     fn from(connection: Connection) -> Self {
         connection.0
     }
