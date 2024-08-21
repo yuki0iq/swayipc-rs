@@ -196,8 +196,10 @@ pub struct Input {
     /// The human readable name for the device.
     pub name: String,
     /// The vendor code for the input device.
+    #[serde(default)]
     pub vendor: i32,
     /// The product code for the input device.
+    #[serde(default)]
     pub product: i32,
     /// The device type.  Currently this can be keyboard, pointer, touch,
     /// tablet_tool, tablet_pad, or switch.
